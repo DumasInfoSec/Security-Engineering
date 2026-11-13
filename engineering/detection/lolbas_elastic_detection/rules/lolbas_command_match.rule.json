@@ -1,0 +1,24 @@
+{
+  "rule_id": "lolbas-command-match",
+  "name": "LOLBAS binary run with a known attack command",
+  "description": "A living-off-the-land binary from the LOLBAS project started with a command line that contains all keywords of a known LOLBAS attack command. The lolbas_command and lolbas_url fields of the alert show which command matched.",
+  "type": "esql",
+  "language": "esql",
+  "query": "FROM logs-endpoint.events.process-*, logs-crowdstrike.fdr-*, logs-m365_defender.event-* METADATA _id, _index, _version | WHERE event.category == \"process\" AND event.type == \"start\" AND process.command_line IS NOT NULL | EVAL lolbas_name = TO_LOWER(process.name), lolbas_cmdline = TO_LOWER(process.command_line) | LOOKUP JOIN lolbas-commands ON lolbas_name | WHERE lolbas_keyword_count >= 2 OR lolbas_remote == true | WHERE LOCATE(lolbas_cmdline, lolbas_kw1) > 0 AND (lolbas_kw2 IS NULL OR LOCATE(lolbas_cmdline, lolbas_kw2) > 0) AND (lolbas_kw3 IS NULL OR LOCATE(lolbas_cmdline, lolbas_kw3) > 0) | KEEP _id, _index, _version, @timestamp, host.name, user.name, process.name, process.command_line, process.parent.name, lolbas_category, lolbas_mitre_id, lolbas_usecase, lolbas_command, lolbas_url | LIMIT 1000",
+  "severity": "medium",
+  "risk_score": 47,
+  "interval": "5m",
+  "from": "now-6m",
+  "max_signals": 100,
+  "enabled": false,
+  "tags": [
+    "LOLBAS",
+    "Living off the Land"
+  ],
+  "references": [
+    "https://lolbas-project.github.io/"
+  ],
+  "false_positives": [
+    "Administrators and software installers that use these binaries in the same way. Add rule exceptions for known-good host, user or parent process combinations."
+  ]
+}
