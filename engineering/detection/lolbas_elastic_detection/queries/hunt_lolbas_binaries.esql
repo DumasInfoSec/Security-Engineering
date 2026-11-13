@@ -1,0 +1,15 @@
+// Hunting query: which LOLBAS binaries ran in the last 24 hours, and how widely.
+// This raises no alerts. Binaries at the top ran on the fewest hosts, so they
+// are the most unusual. Change the time range or add "AND host.name == ..." as needed.
+FROM logs-endpoint.events.process-*, logs-crowdstrike.fdr-*, logs-m365_defender.event-*
+| WHERE @timestamp > NOW() - 24 hours
+| WHERE event.category == "process" AND event.type == "start"
+| EVAL lolbas_name = TO_LOWER(process.name)
+| LOOKUP JOIN lolbas-binaries ON lolbas_name
+| WHERE lolbas_url IS NOT NULL
+| STATS executions = COUNT(*),
+        hosts = COUNT_DISTINCT(host.name),
+        users = COUNT_DISTINCT(user.name)
+  BY lolbas_name, lolbas_categories, lolbas_url
+| SORT hosts ASC, executions ASC
+| LIMIT 300
