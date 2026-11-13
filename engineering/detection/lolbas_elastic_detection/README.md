@@ -3,7 +3,7 @@
 Detects living-off-the-land (LOTL) activity on Windows hosts in Elastic, using the
 [LOLBAS project](https://lolbas-project.github.io/) as the source of truth.
 
-It has four parts. The rule, hunting query and ML job each need the list sync, and nothing else:
+It has four parts. The rule, hunting query and ML job each need the list sync.
 
 | Part | What it does | Raises alerts? |
 |---|---|---|
