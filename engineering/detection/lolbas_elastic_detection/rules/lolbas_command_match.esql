@@ -1,0 +1,25 @@
+// Detection rule query: a LOLBAS binary started with a command line that
+// contains every keyword of a known LOLBAS attack command.
+//
+// How it works:
+//   1. Take process-start events that have a command line.
+//   2. Join each event to the lolbas-commands index on the lowercase binary name.
+//      An event gets one row per LOLBAS command known for that binary.
+//   3. Keep a row only if the command line contains keyword 1, and keywords 2
+//      and 3 when the LOLBAS command has them.
+//
+// Tuning:
+//   A LOLBAS command with a single keyword is too easy to match by accident, so
+//   it only counts when it loads a payload from a URL or a network share
+//   (lolbas_remote). Use ">= 1" for more coverage or ">= 3" for fewer alerts.
+FROM logs-endpoint.events.process-*, logs-crowdstrike.fdr-*, logs-m365_defender.event-* METADATA _id, _index, _version
+| WHERE event.category == "process" AND event.type == "start" AND process.command_line IS NOT NULL
+| EVAL lolbas_name = TO_LOWER(process.name), lolbas_cmdline = TO_LOWER(process.command_line)
+| LOOKUP JOIN lolbas-commands ON lolbas_name
+| WHERE lolbas_keyword_count >= 2 OR lolbas_remote == true
+| WHERE LOCATE(lolbas_cmdline, lolbas_kw1) > 0
+    AND (lolbas_kw2 IS NULL OR LOCATE(lolbas_cmdline, lolbas_kw2) > 0)
+    AND (lolbas_kw3 IS NULL OR LOCATE(lolbas_cmdline, lolbas_kw3) > 0)
+| KEEP _id, _index, _version, @timestamp, host.name, user.name, process.name, process.command_line,
+       process.parent.name, lolbas_category, lolbas_mitre_id, lolbas_usecase, lolbas_command, lolbas_url
+| LIMIT 1000
