@@ -1,0 +1,13 @@
+// Run this first, in Kibana > Discover (ES|QL mode) or Dev Tools.
+// It shows, per data source, how many process-start events exist in the last
+// hour and how many of them carry the two fields the detections need.
+// A source that is missing from the result, or shows 0 in with_name or
+// with_command_line, cannot be used until its index pattern or fields are fixed.
+FROM logs-endpoint.events.process-*, logs-crowdstrike.fdr-*, logs-m365_defender.event-*
+| WHERE @timestamp > NOW() - 1 hour
+| WHERE event.category == "process" AND event.type == "start"
+| STATS events = COUNT(*),
+        with_name = COUNT(process.name),
+        with_command_line = COUNT(process.command_line)
+  BY event.dataset
+| SORT events DESC
