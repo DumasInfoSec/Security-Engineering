@@ -14,3 +14,8 @@ feeds_history.json
 # Environment
 venv/
 .venv/
+
+# State and alert output written by the monitor
+monitor_state.json
+monitor_state.bak
+alerts.jsonl
