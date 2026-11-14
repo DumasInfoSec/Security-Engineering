@@ -4,6 +4,8 @@ DeviceProcessEvents
 | where FileName in~ (EDRProcesses)
 | where FolderPath has_any ("AppData", "Temp", "Public", "ProgramData", "Users")
 | where not(FolderPath has "Program Files")
+// Real EDR installers and updaters unpack here before they run
+| where not(FolderPath has "Package Cache")
 // Exclusion for genuine updates if they run temporarily from specific secure folders (tune as needed)
 | project Timestamp, AccountName, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessFileName
 | sort by Timestamp desc
