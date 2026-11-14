@@ -10,23 +10,17 @@ logsource:
 detection:
     selection_img:
         Image|endswith: '\wdichost.exe'
-    # Exclude Private IP ranges (10.x, 192.168.x, 172.16-31.x, 127.x)
+    # Exclude private and loopback ranges
     filter_private_ips:
-        DestinationIp|startswith:
-            - '10.'
-            - '192.168.'
-            - '172.16.'
-            - '172.17.'
-            - '172.18.'
-            - '172.19.'
-            - '172.2'
-            - '172.30.'
-            - '172.31.'
-            - '127.'
-            - '::1'
+        DestinationIp|cidr:
+            - '10.0.0.0/8'
+            - '172.16.0.0/12'
+            - '192.168.0.0/16'
+            - '127.0.0.0/8'
+            - '::1/128'
     condition: selection_img and not filter_private_ips
 level: high
 tags:
-    - attack.command_and_control
-    - attack.defense_evasion
-    - attack.t1574.002
+    - attack.command-and-control
+    - attack.stealth
+    - attack.t1574.001
