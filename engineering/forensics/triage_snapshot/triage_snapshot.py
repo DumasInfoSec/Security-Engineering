@@ -4,10 +4,19 @@ import json
 import hashlib
 import datetime
 import os
+import socket
 import sys
+
+# Many processes share one executable, so each file is hashed only once
+_hash_cache = {}
 
 def get_file_hash_sha256(path):
     """Generates a SHA-256 hash of an executable for IOC matching."""
+    if path not in _hash_cache:
+        _hash_cache[path] = _hash_file(path)
+    return _hash_cache[path]
+
+def _hash_file(path):
     if not path or not os.path.exists(path):
         return "N/A"
     try:
@@ -25,7 +34,7 @@ def collect_triage():
     """Captures volatile system state: Processes, Network, and System Info."""
     snapshot = {
         "metadata": {
-            "timestamp_utc": datetime.datetime.utcnow().isoformat(),
+            "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "hostname": platform.node(),
             "os": f"{platform.system()} {platform.release()}",
             "boot_time": datetime.datetime.fromtimestamp(psutil.boot_time()).isoformat()
@@ -49,11 +58,12 @@ def collect_triage():
     try:
         for conn in psutil.net_connections(kind='inet'):
             snapshot["network_connections"].append({
-                "local_address": f"{conn.laddr.ip}:{conn.laddr.port}",
+                # laddr is an empty tuple for sockets that are not bound yet
+                "local_address": f"{conn.laddr.ip}:{conn.laddr.port}" if conn.laddr else "N/A",
                 "remote_address": f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else "N/A",
                 "status": conn.status,
                 "pid": conn.pid,
-                "type": "TCP" if conn.type == 1 else "UDP"
+                "type": "TCP" if conn.type == socket.SOCK_STREAM else "UDP"
             })
     except psutil.AccessDenied:
         print("[!] Warning: Access denied while fetching network connections. Run as Admin/Root.")
