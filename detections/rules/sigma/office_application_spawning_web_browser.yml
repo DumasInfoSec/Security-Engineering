@@ -23,7 +23,9 @@ detection:
             - '\brave.exe'
             - '\opera.exe'
     condition: selection_parent and selection_child
-level: high
+falsepositives:
+    - Users clicking normal links in email and documents. Use this rule for hunting or correlation, not for direct alerting.
+level: low
 tags:
     - attack.execution
     - attack.t1204.002
