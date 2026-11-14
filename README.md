@@ -16,6 +16,7 @@ Repository of security engineering scripts (python/powershell/ruby (coming soon)
 | `engineering/automation/` | Automation scripts, grouped by language |
 | `engineering/detection/` | Detection tooling. `lolbas_elastic_detection` loads the LOLBAS list into Elastic and alerts on LOTL commands |
 | `engineering/forensics/` | Memory scanner, prefetch parser, triage snapshot |
+| `engineering/llm-security/` | LLM security tools. `scrub-proxy` removes secrets and personal data from requests to the Anthropic API and restores them in responses |
 | `engineering/threat-intel/` | Dark web RSS scraper |
 
 Each tool folder has its own README.
