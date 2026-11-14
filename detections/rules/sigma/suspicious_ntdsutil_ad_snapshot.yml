@@ -18,5 +18,5 @@ detection:
     condition: selection_img and selection_cli
 level: critical
 tags:
-    - attack.credential_access
+    - attack.credential-access
     - attack.t1003.003
