@@ -12,11 +12,11 @@ A generic Python utility for bulk-loading JSON data into Elasticsearch. This scr
 *   Elasticsearch Python client: `pip install elasticsearch`
 
 ### Configuration
-The script looks for the following environment variables. You can set these in your terminal or via a `.env` file.
+The script looks for the following environment variables. Set them in your terminal before you run it (the script does not read a `.env` file by itself).
 
 | Variable | Description |
 | :--- | :--- |
-| `ELASTIC_CLOUD_ID` | Your Elastic Cloud ID. |
+| `ELASTIC_CLOUD_ID` | Your Elastic Cloud ID. Leave unset for self-hosted. |
 | `ELASTIC_API_KEY` | Your Base64 encoded API Key. |
 | `ELASTIC_HOST` | The URL of your instance (e.g., `https://localhost:9200`). |
 | `ELASTIC_USER` | Username (default: `elastic`). |
@@ -29,4 +29,5 @@ The script looks for the following environment variables. You can set these in y
 2. Ensure your data file is formatted as a JSON list.
 3. Run the script:
    ```bash
-   python elastic_ingest.py
+   python custom_data_to_elasticsearch_dynamic_list.py
+   ```
