@@ -63,7 +63,7 @@ class ForensicsUtils:
         """Checks if the script has Administrator privileges (Required for C:\\Windows\\Prefetch)."""
         try:
             return os.name == 'nt' and ctypes.windll.shell32.IsUserAnAdmin()
-        except:
+        except Exception:
             return False
 
     @staticmethod
@@ -97,11 +97,8 @@ def parse_pf_file(file_path: Path) -> Dict[str, Any]:
         pf_hash = ForensicsUtils.extract_hash_from_name(file_path.name)
         
         # Normalize timestamps to ISO 8601 strings for JSON compatibility
-        last_runs = []
-        if pf.lastRunTimes:
-            for t in pf.lastRunTimes:
-                if t:
-                    last_runs.append(str(t))
+        # windowsprefetch exposes run times as .timestamps and loaded files as .resources
+        last_runs = [str(t) for t in (getattr(pf, "timestamps", None) or []) if t]
 
         # Construct structured event
         result = {
@@ -115,7 +112,7 @@ def parse_pf_file(file_path: Path) -> Dict[str, Any]:
                 "run_count": pf.runCount,
                 "last_run_times": last_runs
             },
-            "files_referenced": [m.filename for m in pf.fileMetrics]
+            "files_referenced": list(getattr(pf, "resources", None) or [])
         }
         return result
 
