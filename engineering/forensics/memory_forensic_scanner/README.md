@@ -19,4 +19,8 @@ The script performs a heuristic scan of a memory dump to identify four specific 
 ### Testing
 Running the script without modification will trigger a simulation. It generates a small mock memory dump in your system's RAM to demonstrate how the detection logic handles various artifacts.
 
-
+### Scanning a real dump
+Pass the path to a `.raw`, `.mem` or `.dmp` file on the command line, or set `TARGET_FILE` at the top of the script:
+```bash
+python memory_forensic_scanner.py /path/to/memory.raw
+```
