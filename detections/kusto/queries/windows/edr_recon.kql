@@ -5,7 +5,7 @@ DeviceProcessEvents
 | where InitiatingProcessFileName in~ (EDRProcesses)
 | where FileName in~ (SuspiciousChildren)
 /// benign user exclusions
-| where AccountName != "system"
+| where AccountName !~ "system"
 // Specific behavior observed in Storm-0249: querying MachineGuid
 | extend IsMachineGuidQuery = ProcessCommandLine has "MachineGuid"
 | summarize count() by DeviceName, AccountName, InitiatingProcessFileName, FileName, ProcessCommandLine, IsMachineGuidQuery
