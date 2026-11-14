@@ -4,7 +4,7 @@ from elasticsearch import Elasticsearch, helpers
 
 # --- CONFIGURATION ---
 # Authentication - Populate these or use Environment Variables
-CLOUD_ID = os.getenv("ELASTIC_CLOUD_ID", "your_cloud_id_here")
+CLOUD_ID = os.getenv("ELASTIC_CLOUD_ID", None) # Leave unset for self-hosted
 API_KEY = os.getenv("ELASTIC_API_KEY", None) # Preferred for Cloud
 
 # Fallback/Self-hosted Authentication
@@ -13,8 +13,8 @@ ES_USER = os.getenv("ELASTIC_USER", "elastic")
 ES_PASS = os.getenv("ELASTIC_PASSWORD", "password")
 
 # Data Configuration
-INDEX_NAME = "your-custom-index"
-DATA_FILE_PATH = "your_data.json" # Path to your JSON file, can do CSV as well
+INDEX_NAME = os.getenv("INDEX_NAME", "your-custom-index")
+DATA_FILE_PATH = os.getenv("DATA_FILE_PATH", "your_data.json") # Path to your JSON file (a list of objects)
 
 def get_client():
     """Initializes the Elasticsearch client based on available credentials."""
@@ -80,10 +80,11 @@ def main():
     # Index Data
     print(f"Starting bulk indexing to index: {INDEX_NAME}...")
     try:
-        success, failed = helpers.bulk(es, generate_actions(data))
+        # raise_on_error=False returns the failed documents instead of stopping at the first one
+        success, failed = helpers.bulk(es, generate_actions(data), raise_on_error=False)
         print(f"Successfully indexed: {success}")
         if failed:
-            print(f"Failed to index: {failed}")
+            print(f"Failed to index {len(failed)} documents. First error: {failed[0]}")
     except Exception as e:
         print(f"An error occurred during indexing: {e}")
 
