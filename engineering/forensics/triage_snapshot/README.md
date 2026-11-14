@@ -21,3 +21,6 @@ For the most accurate results, the script must be run with elevated privileges (
 
 ```bash
 python triage_snapshot.py
+```
+
+The snapshot is saved in the current folder as `triage_<hostname>_<date>.json`.
