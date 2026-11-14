@@ -11,7 +11,7 @@ detection:
     selection_attachment:
         FileName|endswith: '.rpmsg'
     selection_keywords:
-        Subject|contains|any:
+        Subject|contains:
             - 'encrypted'
             - 'message'
             - 'secure'
@@ -22,5 +22,5 @@ detection:
     condition: selection_attachment and selection_keywords
 level: medium
 tags:
-    - attack.initial_access
+    - attack.initial-access
     - attack.t1566.001
