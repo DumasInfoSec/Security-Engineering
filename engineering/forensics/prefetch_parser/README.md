@@ -16,6 +16,13 @@ This script extracts execution history from Windows Prefetch (.pf) files. It is 
 Analyze the system's prefetch directory (requires Admin/Elevated privileges):
 ```bash
 python prefetch_parser.py -d C:\Windows\Prefetch
+```
 
 Analyze a specific file:
+```bash
 python prefetch_parser.py -f CMD.EXE-AC12B3.pf
+```
+
+Results are written as JSON Lines to `prefetch_events.jsonl`. Use `-o` to change the output file and `--workers` to change the number of parallel processes.
+
+Note: Windows 10/11 prefetch files are compressed. The `windowsprefetch` library can only decompress them when the script runs on Windows.
