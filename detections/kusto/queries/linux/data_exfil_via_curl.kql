@@ -1,4 +1,5 @@
 DeviceProcessEvents
 | where FileName =~ "curl"
-| where ProcessCommandLine has_any ("-d", "--data", "-F", "--form") and ProcessCommandLine contains "@"
+// Case-sensitive on purpose: -d/-F upload data, while -D and -f do something else
+| where ProcessCommandLine matches regex @"(^|\s)(-d|--data(-binary|-raw|-urlencode)?|-F|--form)(\s|=|@|$)" and ProcessCommandLine contains "@"
 | project Timestamp, DeviceId, DeviceName, ReportId, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName
