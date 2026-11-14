@@ -42,7 +42,7 @@ class Severity(IntEnum):
 class MonitorConfig:
     """
     Central Configuration Class.
-    Fields marked [USER INPUT REQUIRED] are deisgnated for your own preferred settings.
+    Fields marked [USER INPUT REQUIRED] are designated for your own preferred settings.
     """
     
     # --- [USER INPUT REQUIRED] INFRASTRUCTURE ---
@@ -83,7 +83,7 @@ class MonitorConfig:
     # --- [USER INPUT REQUIRED] TARGET FEEDS ---
     # List of .onion RSS URLs to monitor. 
     # NOTE: Replace these examples with live dark web feed URLs.
-    # I do not accept any responsability for information returned by your own use of this scraper.
+    # I do not accept any responsibility for information returned by your own use of this scraper.
     feeds: List[str] = field(default_factory=lambda: [
         "http://breach-forums.onion/syndication.php?limit=20",
         "http://exploit_in.onion/external.php?type=RSS2",
@@ -108,7 +108,8 @@ class MonitorConfig:
     ])
     
     # User Agents to rotate through (Standard Firefox/Chrome on various OS)
-    # Add as many relevant user agents as you wish, however performence is impacted above 200 agents.
+    # Add as many relevant user agents as you wish, however performance is impacted above 200 agents.
+    user_agents: List[str] = field(default_factory=lambda: [
         "Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0",
         "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
@@ -334,7 +335,7 @@ class DarkWebMonitor:
             "matches": [{k: str(v) for k, v in m.items()} for m in matches]
         }
         self.alert_logger.info(json.dumps(alert))
-        self.op_logger.warning(f"🚨 ALERT: {len(matches)} matches in {url} (Severity: {max_sev})")
+        self.op_logger.warning(f"ALERT: {len(matches)} matches in {url} (Severity: {max_sev})")
 
     def _verify_tor(self) -> bool:
         """Ensures traffic is actually routed through Tor."""
@@ -357,12 +358,14 @@ class DarkWebMonitor:
             
             for url in self.cfg.feeds:
                 if not self.running: break
+                if alerts_count >= self.cfg.max_alerts_per_cycle: break
                 
                 self._rotate_identity()
                 
                 try:
                     # Random Jitter to evade bot detection
-                    time.sleep(secrets.randbelow(self.cfg.request_delay_range[1]) + self.cfg.request_delay_range[0])
+                    low, high = self.cfg.request_delay_range
+                    time.sleep(low + secrets.randbelow(high - low + 1))
                     
                     resp = self.session.get(url, timeout=self.cfg.request_timeout)
                     feed = feedparser.parse(resp.content)
