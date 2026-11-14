@@ -26,6 +26,8 @@ ENTROPY_THRESHOLD = 7.5
 NOP_SLED_MIN_SIZE = 32        
 # Process in 4KB pages (matches standard memory page size)
 BLOCK_SIZE = 4096             
+# Keep at most this many hits per string pattern, so a multi-GB dump cannot fill RAM
+MAX_HITS_PER_PATTERN = 1000
 
 class MemoryScanner:
     def __init__(self):
@@ -40,15 +42,16 @@ class MemoryScanner:
         # Global string targets
         self.str_patterns = {
             b"powershell": re.compile(b"powershell", re.IGNORECASE),
-            b"cmd.exe": re.compile(b"cmd\.exe", re.IGNORECASE),
-            b"kernel32.dll": re.compile(b"kernel32\.dll", re.IGNORECASE),
-            b"WScript.Shell": re.compile(b"WScript\.Shell", re.IGNORECASE),
+            b"cmd.exe": re.compile(rb"cmd\.exe", re.IGNORECASE),
+            b"kernel32.dll": re.compile(rb"kernel32\.dll", re.IGNORECASE),
+            b"WScript.Shell": re.compile(rb"WScript\.Shell", re.IGNORECASE),
             b"http_proto": re.compile(b"https?://"),
             b"mimikatz": re.compile(b"mimikatz", re.IGNORECASE)
         }
         
         # NOP Sled: Sequence of 0x90
         self.nop_regex = re.compile(b'\x90{' + str(NOP_SLED_MIN_SIZE).encode() + b',}')
+        self.mz_regex = re.compile(b'MZ')
 
     @staticmethod
     def calculate_entropy(data: bytes) -> float:
@@ -110,9 +113,16 @@ class MemoryScanner:
         # Using regex on mmap is efficient (internal C implementation)
         print("[*] Phase 1: Artifact Scanning...")
         for name, pattern in self.str_patterns.items():
+            total = 0
             for match in pattern.finditer(data):
+                total += 1
+                if total <= MAX_HITS_PER_PATTERN:
+                    self.findings["suspicious_strings"].append(
+                        f"{name.decode()} at {hex(match.start())}"
+                    )
+            if total > MAX_HITS_PER_PATTERN:
                 self.findings["suspicious_strings"].append(
-                    f"{name.decode()} at {hex(match.start())}"
+                    f"{name.decode()}: {total - MAX_HITS_PER_PATTERN} more hits not listed"
                 )
         
         for match in self.nop_regex.finditer(data):
@@ -135,17 +145,12 @@ class MemoryScanner:
                     "entropy": round(entropy, 2)
                 })
 
-            # B. PE Headers
-            # We search for 'MZ' in the chunk, then validate
-            mz_loc = chunk.find(b'MZ')
-            while mz_loc != -1:
-                abs_offset = i + mz_loc
-                # Only check if it's a valid PE to avoid noise
-                if self.is_valid_pe(data, abs_offset, data_len):
-                    self.findings["pe_headers"].append(hex(abs_offset))
-                
-                # Find next MZ in this chunk
-                mz_loc = chunk.find(b'MZ', mz_loc + 1)
+        # B. PE Headers
+        # Search the whole buffer for 'MZ' (so a header split across two blocks is not missed), then validate
+        for match in self.mz_regex.finditer(data):
+            # Only check if it's a valid PE to avoid noise
+            if self.is_valid_pe(data, match.start(), data_len):
+                self.findings["pe_headers"].append(hex(match.start()))
 
         duration = datetime.now() - start_time
         print(f"[*] Scan complete in {duration}")
@@ -165,7 +170,7 @@ def run_simulation_mock():
     mock[0x600:0x640] = b'\x90' * 64
     
     # Inject Strings
-    mock[0x1000:0x100b] = b'powershell'
+    mock[0x1000:0x100a] = b'powershell'
     mock[0x1020:0x1027] = b'cmd.exe'
     
     # Inject High Entropy (Encryption)
@@ -176,9 +181,16 @@ def run_simulation_mock():
 def main():
     scanner = MemoryScanner()
     
-    if TARGET_FILE and os.path.exists(TARGET_FILE):
+    # A path given on the command line overrides TARGET_FILE
+    target = sys.argv[1] if len(sys.argv) > 1 else TARGET_FILE
+    
+    if target and not os.path.isfile(target):
+        print(f"[!] File not found: {target}")
+        sys.exit(1)
+    
+    if target:
         try:
-            with open(TARGET_FILE, "rb") as f:
+            with open(target, "rb") as f:
                 # MMAP: Map file into memory without loading it all at once
                 # access=mmap.ACCESS_READ is readonly
                 with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
